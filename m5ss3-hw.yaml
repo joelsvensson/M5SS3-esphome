@@ -75,7 +75,7 @@ binary_sensor:
   #    then:
   #      - switch.turn_on: reboot_switch
 
-
+# LCD Backlight
 output:
   - platform: ledc
     pin: GPIO38
@@ -154,6 +154,8 @@ display:
       #offset_height: 55
     invert_colors: true
     lambda: |-
+      // Turn the whole display on
+      it.fill(rgb_blue);
       if (id(ha_time).now().is_valid()) {
         it.strftime(5, 0, id(roboto_24), Color(rgb_orange), "%a %d %b %Y  %H:%M  %Z", id(ha_time).now()); 
       }
