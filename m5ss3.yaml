@@ -1,0 +1,37 @@
+substitutions:
+  devicename: m5ss3
+  upper_devicename: M5SS3
+  swversion: 0.9.0
+
+
+##############################################################################
+# WIFI, API, OTA
+##############################################################################
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: !secret ip_address
+   
+api:
+  encryption:
+    key: !secret api_encryption_key
+    
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+logger:
+  level: DEBUG
+  logs:
+    sensor: INFO
+    text_sensor: INFO
+    light: INFO
+    select: INFO
+
+
+<<: !include m5ss3-hw.yaml
+#<<: !include m5ss3-hass.yaml
+#<<: !include m5ss3-vars.yaml
+#<<: !include m5ss3-scripts.yaml
+

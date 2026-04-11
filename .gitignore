@@ -1,0 +1,6 @@
+/.esphome/
+/secrets.yaml
+.nfs*
+*.swp
+__pycache__*
+

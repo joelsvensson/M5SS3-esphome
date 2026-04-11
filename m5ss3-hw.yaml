@@ -1,0 +1,171 @@
+esphome:
+  name: ${devicename}
+  friendly_name: ${upper_devicename}
+  comment: "(c) Michael Siebecker"
+
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  #flash_size: 8MB
+  framework:
+    type: esp-idf
+
+
+external_components:
+  - source: components
+
+
+# M5PM1
+m5pm1:
+  id: m5pm1_id
+  i2c_id: i2c_internal
+  address: 0x6E
+  update_interval: 30s
+  battery_voltage:
+    id: m5pm1_battery_volt
+    name: "M5PM1 Battery Voltage"
+  on_battery:
+    id: m5pm1_onbattery
+    name: "M5PM1 On Battery"
+  on_usb:
+    id: m5pm1_onusb
+    name: "M5PM1 On USB"
+
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    update_interval: 1h
+
+
+i2c:
+  - id: i2c_internal
+    sda: GPIO47
+    scl: GPIO48
+    scan: true
+    frequency: 100kHz
+    timeout: 5ms
+
+
+spi:
+  - id: lcd_spi
+    clk_pin: GPIO40
+    mosi_pin: GPIO39
+    # no miso needed
+
+
+binary_sensor:
+  # Front button
+  - platform: gpio
+    pin:
+      number: GPIO11
+      inverted: true
+    name: "Front Button"
+    id: button_front
+
+  # Right Side button - reboot trigger
+  - platform: gpio
+    pin:
+      number: GPIO12
+      inverted: true
+    name: "Side Button"
+    id: button_side
+  #  on_press:
+  #    then:
+  #      - switch.turn_on: reboot_switch
+
+
+output:
+  - platform: ledc
+    pin: GPIO38
+    id: bl_pwm
+    frequency: 1000Hz     # or try 5000Hz if still dim
+
+
+light:
+  - platform: monochromatic
+    output: bl_pwm
+    id: lcd_backlight
+    restore_mode: ALWAYS_ON
+    default_transition_length: 0s
+
+font:
+  - file: "gfonts://Roboto"
+    id: roboto_24
+    size: 24
+
+  - file: "gfonts://Roboto"
+    id: roboto_36
+    size: 36
+
+color:
+  - id: rgb_black
+    red: 0%
+    green: 0%
+    blue: 0%
+  - id: rgb_white
+    red: 100%
+    green: 100%
+    blue: 100%
+  - id: rgb_blue
+    red: 0%
+    green: 0%
+    blue: 100%
+  - id: rgb_red
+    red: 100%
+    green: 0%
+    blue: 0%
+  - id: rgb_green
+    red: 0%
+    green: 100%
+    blue: 0%
+  - id: rgb_yellow
+    red: 100%
+    green: 100%
+    blue: 0%
+  - id: rgb_orange
+    red: 100%
+    green: 50%
+    blue: 0%
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+
+display:
+  - platform: mipi_spi
+    #update_interval: never
+    update_interval: 1s
+    model: ST7789P
+    spi_id: lcd_spi
+    cs_pin: GPIO41
+    dc_pin: GPIO45
+    reset_pin: GPIO21
+    init_sequence: []
+    transform: 
+      swap_xy: True
+      mirror_x: True
+      mirror_y: False
+    dimensions:
+      width: 135
+      height: 240
+      #offset_width: 42
+      #offset_height: 55
+    invert_colors: true
+    lambda: |-
+      if (id(ha_time).now().is_valid()) {
+        it.strftime(5, 0, id(roboto_24), Color(rgb_orange), "%a %d %b %Y  %H:%M  %Z", id(ha_time).now()); 
+      }
+
+
+interval:
+  - interval: 10s
+    id: refresh_pm1
+    then:
+      - lambda: |
+          auto pm1 = id(m5pm1_id);
+          pm1->trigger_update();
+          ESP_LOGD("log_pm1", "Battery volt: %.1f V", id(m5pm1_battery_volt).state);
+          id(m5pm1_id).set_standby(false);
+

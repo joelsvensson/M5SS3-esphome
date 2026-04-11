@@ -1,0 +1,49 @@
+switch:
+  # Reboot device
+  - platform: restart
+    name: "Reboot"
+    id: reboot_switch
+    restore_mode: ALWAYS_OFF
+    icon: "mdi:restart"
+    entity_category: config
+
+  # M5PM1 Power Controls
+  - platform: template
+    name: "M5PM1 LDO Enable"
+    turn_on_action:
+      - lambda: id(m5pm1_id).set_ldo_enabled(true);
+    turn_off_action:
+      - lambda: id(m5pm1_id).set_ldo_enabled(false);
+    entity_category: config
+
+  - platform: template
+    name: "M5PM1 DCDC Enable"
+    turn_on_action:
+      - lambda: id(m5pm1_id).set_dcdc_enabled(true);
+    turn_off_action:
+      - lambda: id(m5pm1_id).set_dcdc_enabled(false);
+    entity_category: config
+
+  - platform: template
+    name: "M5PM1 5V Enable"
+    turn_on_action:
+      - lambda: id(m5pm1_id).set_5v_enabled(true);
+    turn_off_action:
+      - lambda: id(m5pm1_id).set_5v_enabled(false);
+    entity_category: config
+
+  - platform: template
+    name: "M5PM1 Charging Enable"
+    turn_on_action:
+      - lambda: id(m5pm1_id).set_charging_enabled(true);
+    turn_off_action:
+      - lambda: id(m5pm1_id).set_charging_enabled(false);
+    entity_category: config
+
+  - platform: template
+    name: "M5PM1 Shutdown"
+    turn_on_action:
+      - lambda: id(m5pm1_id).shutdown();
+    restore_mode: ALWAYS_OFF
+    entity_category: config
+
