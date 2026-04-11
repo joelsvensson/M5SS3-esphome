@@ -103,17 +103,21 @@ void M5PM1Component::set_charging_enabled(bool on) {
 void M5PM1Component::set_standby(bool on) {
   // L3A = standby (low power), L3B = high power (all peripherals)
   // Control via M5PM1 GPIO2 (PYG2 pin)
-  // Set GPIO2 function: REG 0x16 bit 2 = 0 (GPIO function)
+  // Set GPIO2 function: REG 0x16 bits [5:4] = 0 (GPIO function)
   uint8_t func = read_reg_(REG_GPIO_FUNC0);
-  func &= ~(0b11 << 2);  // Clear bits 2-3 for GPIO function
-  func |= (GPIO_FUNC_GPIO << 2);
+  func &= ~(0b11 << 4);  // Clear bits 4-5 for GPIO2 function
+  func |= (GPIO_FUNC_GPIO << 4);
   write_reg_(REG_GPIO_FUNC0, func);
   
-  // Set GPIO2 mode: REG 0x10 bit 2 = 0 (output)
+  // Set GPIO2 mode: REG 0x10 bit 2 = 1 (output)
   uint8_t mode = read_reg_(REG_GPIO_MODE);
-  if (on) mode |= (1 << 2);   // output
-  else mode &= ~(1 << 2);      // input
+  mode |= (1 << 2);   // output
   write_reg_(REG_GPIO_MODE, mode);
+  
+  // Set GPIO2 drive: REG 0x13 bit 2 = 0 (push-pull)
+  uint8_t drv = read_reg_(REG_GPIO_DRV);
+  drv &= ~(1 << 2);   // push-pull
+  write_reg_(REG_GPIO_DRV, drv);
   
   // Set output level via REG 0x11 bit 2
   // false = L3B enabled (high power), true = L3A enabled (standby/low power)
