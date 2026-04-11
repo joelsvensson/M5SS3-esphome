@@ -13,6 +13,7 @@ void M5PM1Component::setup() {
 
 void M5PM1Component::update() {
   read_sensors_();
+  update_power_level_();
 }
 
 void M5PM1Component::trigger_update() {
@@ -33,6 +34,48 @@ void M5PM1Component::read_sensors_() {
     if (on_battery_sensor_) on_battery_sensor_->publish_state(on_bat);
     if (on_usb_sensor_) on_usb_sensor_->publish_state(on_usb);
   }
+}
+
+void M5PM1Component::update_power_level_() {
+  uint8_t pwr_cfg = read_reg_(REG_PWR_CFG);
+  uint8_t gpio_out = read_reg_(REG_GPIO_OUT);
+  ESP_LOGD(TAG, "PWR_CFG=0x%02X GPIO_OUT=0x%02X", pwr_cfg, gpio_out);
+  
+  bool dcdc_en = pwr_cfg & PWR_CFG_DCDC_EN;   // DCDC3V3 - ESP32 power
+  bool ldo_en = pwr_cfg & PWR_CFG_LDO_EN;    // LDO3V3 - IMU power  
+  bool boost_en = pwr_cfg & PWR_CFG_BOOST_EN;  // BOOST5V - 5V output
+  bool gpio2_out = gpio_out & (1 << 2);     // GPIO2 controls L3B
+  bool charging_en = pwr_cfg & PWR_CFG_CHG_EN;
+
+  const char* level = "L0";
+
+  // L0: Only PMIC powered, everything off
+  if (!dcdc_en && !ldo_en && charging_en) {
+    level = "L0";
+  }
+  // L1: LDO enabled (IMU), ESP32 off
+  else if (ldo_en && !dcdc_en && !gpio2_out) {
+    level = "L1";
+  }
+  // L2: DCDC enabled (ESP32), L3A (ESP32 active), no GPIO2
+  else if (dcdc_en && !gpio2_out) {
+    level = "L2";
+  }
+  // L3A: DCDC + GPIO2 high (manually set for active)
+  else if (dcdc_en && gpio2_out) {
+    level = "L3A";
+  }
+  // L3B: DCDC + LDO + BOOST + GPIO2 (all peripherals)
+  else if (dcdc_en && ldo_en && boost_en && gpio2_out) {
+    level = "L3B";
+  }
+  // Fallback
+  else {
+    level = "L2";
+  }
+
+  power_level_ = level;
+  ESP_LOGD(TAG, "Power level set to: %s", level);
 }
 
 void M5PM1Component::dump_config() {

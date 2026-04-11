@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include "esphome/core/component.h"
 #include "esphome/components/i2c/i2c.h"
 #include "esphome/components/sensor/sensor.h"
@@ -19,8 +20,9 @@ class M5PM1Component : public PollingComponent, public i2c::I2CDevice {
   void set_battery_voltage_sensor(sensor::Sensor *s) { battery_voltage_sensor_ = s; }
   void set_on_battery_sensor(binary_sensor::BinarySensor *s) { on_battery_sensor_ = s; }
   void set_on_usb_sensor(binary_sensor::BinarySensor *s) { on_usb_sensor_ = s; }
-  
   void set_update_interval(uint32_t interval) { this->update_interval_ = interval; }
+
+  const char* get_power_level() { return power_level_.c_str(); }
 
   void set_ldo_enabled(bool on);
   void set_dcdc_enabled(bool on);
@@ -31,6 +33,7 @@ class M5PM1Component : public PollingComponent, public i2c::I2CDevice {
 
  protected:
   void read_sensors_();
+  void update_power_level_();
   uint8_t read_reg_(uint8_t reg);
   void write_reg_(uint8_t reg, uint8_t val);
   uint16_t read_battery_voltage_mv_();
@@ -38,6 +41,7 @@ class M5PM1Component : public PollingComponent, public i2c::I2CDevice {
   sensor::Sensor *battery_voltage_sensor_{nullptr};
   binary_sensor::BinarySensor *on_battery_sensor_{nullptr};
   binary_sensor::BinarySensor *on_usb_sensor_{nullptr};
+  std::string power_level_{"L0"};
 
   static const uint8_t REG_PWR_SRC = 0x04;
   static const uint8_t REG_PWR_CFG = 0x06;

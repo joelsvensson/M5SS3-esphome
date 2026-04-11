@@ -75,6 +75,7 @@ binary_sensor:
   #    then:
   #      - switch.turn_on: reboot_switch
 
+
 # LCD Backlight
 output:
   - platform: ledc
@@ -129,9 +130,11 @@ color:
     green: 50%
     blue: 0%
 
+
 sensor:
   - platform: uptime
-    name: "Uptime"
+    name: "Uptime"  
+
 
 display:
   - platform: mipi_spi
@@ -168,6 +171,6 @@ interval:
       - lambda: |
           auto pm1 = id(m5pm1_id);
           pm1->trigger_update();
-          ESP_LOGD("log_pm1", "Battery volt: %.1f V", id(m5pm1_battery_volt).state);
+          ESP_LOGD("log_pm1", "Battery: %.1fV", id(m5pm1_battery_volt).state);
           id(m5pm1_id).set_standby(false);
 
