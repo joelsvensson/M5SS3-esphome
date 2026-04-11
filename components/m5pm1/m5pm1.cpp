@@ -77,26 +77,26 @@ uint16_t M5PM1Component::read_battery_voltage_mv_() {
 
 void M5PM1Component::set_ldo_enabled(bool on) {
   uint8_t cfg = read_reg_(REG_PWR_CFG);
-  if (on) cfg |= (1 << 2);
-  else cfg &= ~(1 << 2);
+  if (on) cfg |= PWR_CFG_LDO_EN;
+  else cfg &= ~PWR_CFG_LDO_EN;
   write_reg_(REG_PWR_CFG, cfg);
 }
 void M5PM1Component::set_dcdc_enabled(bool on) {
   uint8_t cfg = read_reg_(REG_PWR_CFG);
-  if (on) cfg |= (1 << 1);
-  else cfg &= ~(1 << 1);
+  if (on) cfg |= PWR_CFG_DCDC_EN;
+  else cfg &= ~PWR_CFG_DCDC_EN;
   write_reg_(REG_PWR_CFG, cfg);
 }
 void M5PM1Component::set_5v_enabled(bool on) {
   uint8_t cfg = read_reg_(REG_PWR_CFG);
-  if (on) cfg |= (1 << 3);
-  else cfg &= ~(1 << 3);
+  if (on) cfg |= PWR_CFG_BOOST_EN;
+  else cfg &= ~PWR_CFG_BOOST_EN;
   write_reg_(REG_PWR_CFG, cfg);
 }
 void M5PM1Component::set_charging_enabled(bool on) {
   uint8_t cfg = read_reg_(REG_PWR_CFG);
-  if (on) cfg |= (1 << 0);
-  else cfg &= ~(1 << 0);
+  if (on) cfg |= PWR_CFG_CHG_EN;
+  else cfg &= ~PWR_CFG_CHG_EN;
   write_reg_(REG_PWR_CFG, cfg);
 }
 
@@ -105,13 +105,15 @@ void M5PM1Component::set_standby(bool on) {
   // Control via M5PM1 GPIO2 (PYG2 pin)
   // Set GPIO2 function: REG 0x16 bit 2 = 0 (GPIO function)
   uint8_t func = read_reg_(REG_GPIO_FUNC0);
-  func &= ~(1 << 2);  // Clear bit 2 for GPIO function
+  func &= ~(0b11 << 2);  // Clear bits 2-3 for GPIO function
+  func |= (GPIO_FUNC_GPIO << 2);
   write_reg_(REG_GPIO_FUNC0, func);
   
   // Set GPIO2 mode: REG 0x10 bit 2 = 0 (output)
-  uint8_t mode = read_reg_(REG_GPIO_MODE0);
-  mode &= ~(1 << 2);  // Clear bit 2 for output
-  write_reg_(REG_GPIO_MODE0, mode);
+  uint8_t mode = read_reg_(REG_GPIO_MODE);
+  if (on) mode |= (1 << 2);   // output
+  else mode &= ~(1 << 2);      // input
+  write_reg_(REG_GPIO_MODE, mode);
   
   // Set output level via REG 0x11 bit 2
   // false = L3B enabled (high power), true = L3A enabled (standby/low power)
