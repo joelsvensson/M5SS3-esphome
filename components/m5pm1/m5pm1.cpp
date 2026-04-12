@@ -44,12 +44,12 @@ void M5PM1Component::update_power_level_() {
   bool dcdc_en = pwr_cfg & PWR_CFG_DCDC_EN;   // DCDC3V3 - ESP32 power
   bool ldo_en = pwr_cfg & PWR_CFG_LDO_EN;    // LDO3V3 - IMU power  
   bool boost_en = pwr_cfg & PWR_CFG_BOOST_EN;  // BOOST5V - 5V output
-  bool gpio2_out = gpio_out & (1 << 2);     // GPIO2 controls L3B
+  bool gpio2_out = gpio_out & (1 << 2);     // GPIO2: LOW=L3B, HIGH=L3A
   bool charging_en = pwr_cfg & PWR_CFG_CHG_EN;
 
   const char* level = "L0";
 
-  // L0: Only PMIC powered, everything off
+  // L0: Only PMIC powered, everything off (CHG may be on)
   if (!dcdc_en && !ldo_en && charging_en) {
     level = "L0";
   }
@@ -57,21 +57,17 @@ void M5PM1Component::update_power_level_() {
   else if (ldo_en && !dcdc_en && !gpio2_out) {
     level = "L1";
   }
-  // L2: DCDC enabled (ESP32), L3A (ESP32 active), no GPIO2
+  // L3A: DCDC on + GPIO2 LOW (ESP32 active, peripherals on)
   else if (dcdc_en && !gpio2_out) {
-    level = "L2";
-  }
-  // L3A: DCDC + GPIO2 high (manually set for active)
-  else if (dcdc_en && gpio2_out) {
     level = "L3A";
   }
-  // L3B: DCDC + LDO + BOOST + GPIO2 (all peripherals)
-  else if (dcdc_en && ldo_en && boost_en && gpio2_out) {
+  // L3B: DCDC on + GPIO2 HIGH (all peripherals on)
+  else if (dcdc_en && gpio2_out) {
     level = "L3B";
   }
   // Fallback
   else {
-    level = "L2";
+    level = "LX";
   }
 
   power_level_ = level;
@@ -103,8 +99,8 @@ uint8_t M5PM1Component::read_reg_(uint8_t reg) {
 
 void M5PM1Component::write_reg_(uint8_t reg, uint8_t val) {
   // Wake-up read first
-  uint8_t wake = 0;
-  this->read_register(0x06, &wake, 1);
+  //uint8_t wake = 0;
+  //this->read_register(0x06, &wake, 1);
   
   // Now do intended write
   if (this->write_register(reg, &val, 1) != i2c::ERROR_OK) {
@@ -144,7 +140,7 @@ void M5PM1Component::set_charging_enabled(bool on) {
 }
 
 void M5PM1Component::set_standby(bool on) {
-  // L3A = standby (low power), L3B = high power (all peripherals)
+  // L3A = active (LOW power), L3B = all peripherals (HIGH power)
   // Control via M5PM1 GPIO2 (PYG2 pin)
   // Set GPIO2 function: REG 0x16 bits [5:4] = 0 (GPIO function)
   uint8_t func = read_reg_(REG_GPIO_FUNC0);
@@ -163,12 +159,13 @@ void M5PM1Component::set_standby(bool on) {
   write_reg_(REG_GPIO_DRV, drv);
   
   // Set output level via REG 0x11 bit 2
-  // false = L3B enabled (high power), true = L3A enabled (standby/low power)
+  // GPIO2 HIGH = L3B (all peripherals), GPIO2 LOW = L3A (ESP32 active)
+  // on=true (standby) = L3A, on=false (normal) = L3B
   uint8_t out = read_reg_(REG_GPIO_OUT);
   if (on) {
-    out |= (1 << 2);   // L3A = standby ON
+    out &= ~(1 << 2);   // L3A = standby (ESP32 active, peripherals minimal)
   } else {
-    out &= ~(1 << 2); // L3B = high power ON
+    out |= (1 << 2);    // L3B = normal (all peripherals on)
   }
   write_reg_(REG_GPIO_OUT, out);
   

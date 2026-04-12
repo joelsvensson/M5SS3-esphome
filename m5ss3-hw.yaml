@@ -2,6 +2,11 @@ esphome:
   name: ${devicename}
   friendly_name: ${upper_devicename}
   comment: "(c) Michael Siebecker"
+  on_boot:
+    - priority: 300
+      then:
+        lambda: |-
+          id(m5pm1_id).set_standby(false);
 
 
 esp32:
@@ -37,6 +42,10 @@ time:
   - platform: homeassistant
     id: ha_time
     update_interval: 1h
+    on_time:
+      - seconds: /1
+        then:
+          - component.update: lcd_display
 
 
 i2c:
@@ -93,6 +102,10 @@ light:
 
 font:
   - file: "gfonts://Roboto"
+    id: roboto_16
+    size: 16
+
+  - file: "gfonts://Roboto"
     id: roboto_24
     size: 24
 
@@ -138,29 +151,27 @@ sensor:
 
 display:
   - platform: mipi_spi
-    #update_interval: never
-    update_interval: 1s
+    id: lcd_display
+    update_interval: never
     model: ST7789P
     spi_id: lcd_spi
     cs_pin: GPIO41
     dc_pin: GPIO45
     reset_pin: GPIO21
     init_sequence: []
-    transform: 
-      swap_xy: True
-      mirror_x: True
-      mirror_y: False
+    #rotation: 90
+    invert_colors: true
     dimensions:
       width: 135
       height: 240
-      #offset_width: 42
-      #offset_height: 55
-    invert_colors: true
+      offset_width: 52
+      offset_height: 40
     lambda: |-
       // Turn the whole display on
-      it.fill(rgb_blue);
+      it.fill(rgb_black);
+      it.rectangle(0, 0, 135, 240, rgb_blue);
       if (id(ha_time).now().is_valid()) {
-        it.strftime(5, 0, id(roboto_24), Color(rgb_orange), "%a %d %b %Y  %H:%M  %Z", id(ha_time).now()); 
+        it.strftime(5, 0, id(roboto_16), Color(rgb_yellow), "%d.%m.%Y %H:%M", id(ha_time).now()); 
       }
 
 
@@ -172,5 +183,4 @@ interval:
           auto pm1 = id(m5pm1_id);
           pm1->trigger_update();
           ESP_LOGD("log_pm1", "Battery: %.1fV", id(m5pm1_battery_volt).state);
-          id(m5pm1_id).set_standby(false);
 
