@@ -165,19 +165,32 @@ display:
     dc_pin: GPIO45
     reset_pin: GPIO21
     init_sequence: []
-    #rotation: 90
     invert_colors: true
+
+    # portrait
     dimensions:
       width: 135
       height: 240
       offset_width: 52
       offset_height: 40
+
+    # landscape
+    #transform:
+    #  swap_xy: true
+    #  mirror_x: true
+    #  mirror_y: false
+    #dimensions:
+    #  width: 240
+    #  height: 135
+    #  offset_width: 40
+    #  offset_height: 53
+
     lambda: |-
       // Turn the whole display on
       it.fill(rgb_black);
-      it.rectangle(0, 0, 135, 240, rgb_blue);
+      it.rectangle(0, 0, 240, 135, rgb_blue);
       if (id(ha_time).now().is_valid()) {
-        it.strftime(5, 0, id(roboto_16), Color(rgb_yellow), "%d.%m.%Y %H:%M", id(ha_time).now()); 
+        it.strftime(5, 0, id(roboto_16), Color(rgb_yellow), "%d.%m.%Y %H:%M:%S %Z", id(ha_time).now()); 
       }
 
 
