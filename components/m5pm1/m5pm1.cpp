@@ -172,6 +172,39 @@ void M5PM1Component::set_standby(bool on) {
   ESP_LOGD(TAG, "Standby: %s (L3%s)", on ? "ON" : "OFF", on ? "A" : "B");
 }
 
+void M5PM1Component::set_speaker(bool on) {
+  // PYG3_SPK_Pulse
+  // Note: When using the IR receive function, the SPK amplifier must be turned off.
+  // Control via M5PM1 GPIO3 (PYG3 pin)
+  // Set GPIO3 function: REG 0x16 bits [7:6] = 0 (GPIO function)
+  uint8_t func = read_reg_(REG_GPIO_FUNC0);
+  func &= ~(0b11 << 6);  // Clear bits 6 for GPIO3 function
+  func |= (GPIO_FUNC_GPIO << 6);
+  write_reg_(REG_GPIO_FUNC0, func);
+  
+  // Set GPIO3 mode: REG 0x10 bit 3 = 1 (output)
+  uint8_t mode = read_reg_(REG_GPIO_MODE);
+  mode |= (1 << 3);   // output
+  write_reg_(REG_GPIO_MODE, mode);
+  
+  // Set GPIO3 drive: REG 0x13 bit 3 = 0 (push-pull)
+  uint8_t drv = read_reg_(REG_GPIO_DRV);
+  drv &= ~(1 << 3);   // push-pull
+  write_reg_(REG_GPIO_DRV, drv);
+  
+  // Set output level via REG 0x11 bit 3
+  // GPIO3 HIGH = Speaker On, GPIO3 LOW = Speaker Off
+  uint8_t out = read_reg_(REG_GPIO_OUT);
+  if (on) {
+    out |= (1 << 3);    // Speaker On
+  } else {
+    out &= ~(1 << 3);   // Speaker Off
+  }
+  write_reg_(REG_GPIO_OUT, out);
+  
+  ESP_LOGD(TAG, "Speaker: %s", on ? "ON" : "OFF");
+}
+
 void M5PM1Component::shutdown(bool hold) {
   (void)hold;
   write_reg_(REG_SYS_CMD, (0xA << 4) | 0x01);
