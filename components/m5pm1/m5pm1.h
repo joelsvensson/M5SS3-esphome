@@ -29,6 +29,7 @@ class M5PM1Component : public PollingComponent, public i2c::I2CDevice {
   void set_5v_enabled(bool on);  // L3A: 5V output enable (standby ON)
   void set_charging_enabled(bool on);
   void set_standby(bool on);    // L3A/L3B control
+  void set_speaker(bool on);    // PYG3_SPK_Pulse control
   void shutdown(bool hold = true);
 
  protected:
