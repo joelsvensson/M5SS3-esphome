@@ -178,7 +178,7 @@ void M5PM1Component::set_speaker(bool on) {
   // Control via M5PM1 GPIO3 (PYG3 pin)
   // Set GPIO3 function: REG 0x16 bits [7:6] = 0 (GPIO function)
   uint8_t func = read_reg_(REG_GPIO_FUNC0);
-  func &= ~(0b11 << 6);  // Clear bits 6 for GPIO3 function
+  func &= ~(0b11 << 6);  // Clear bits 6-7 for GPIO3 function
   func |= (GPIO_FUNC_GPIO << 6);
   write_reg_(REG_GPIO_FUNC0, func);
   
