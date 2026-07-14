@@ -24,7 +24,12 @@ psram:
 
 
 external_components:
-  - source: components
+  - source:
+      type: git
+      url: https://github.com/ccsmart/M5SS3-esphome
+    components: [ m5pm1 ]
+  - source: github://m5stack/esphome-yaml/components
+    components: [ es8311 ]
 
 
 # M5PM1
@@ -70,6 +75,38 @@ spi:
     # no miso needed
 
 
+i2s_audio:
+  - id: bus_i2s
+    i2s_lrclk_pin: GPIO15
+    i2s_bclk_pin: GPIO17
+    i2s_mclk_pin: GPIO18
+
+
+audio_dac:
+  - platform: es8311
+    id: es8311_dac
+    i2c_id: i2c_internal
+
+
+speaker:
+  - platform: i2s_audio
+    id: i2s_audio_speaker
+    i2s_audio_id: bus_i2s
+    i2s_dout_pin: GPIO14
+    dac_type: external
+    audio_dac: es8311_dac
+
+
+rtttl:
+  speaker: i2s_audio_speaker
+  id: stacks3_rttl
+  gain: 60%
+  on_finished_playback:
+    then:
+      - speaker.mute_on:
+      - lambda: id(m5pm1_id).set_speaker(false);
+
+
 binary_sensor:
   # Front button
   - platform: gpio
@@ -78,6 +115,11 @@ binary_sensor:
       inverted: true
     name: "Front Button"
     id: button_front
+  #  on_press:
+  #    then:
+  #      - lambda: id(m5pm1_id).set_speaker(true);
+  #      - speaker.mute_off:
+  #      - rtttl.play: beep:d=4,o=5,b=120:c,e,g
 
   # Right Side button - reboot trigger
   - platform: gpio
